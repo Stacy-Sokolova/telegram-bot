@@ -28,7 +28,7 @@ func (p *Processor) doCmd(text string, chatID int, username string) error {
 		return p.savePage(chatID, text, username)
 	}
 
-	if isWordToCheck(text) {
+	if isWordToCheck(text, chatID) {
 		return p.checkTranslation(chatID, text)
 	}
 
@@ -98,8 +98,9 @@ func (p *Processor) checkTranslation(chatID int, word string) (err error) {
 
 }
 
-func isWordToCheck(text string) bool {
-	return !strings.Contains(text, "/")
+func isWordToCheck(text string, chatID int) bool {
+	w, ok := usersWhoTranslate[chatID]
+	return !strings.Contains(text, "/") && ok && w != ""
 }
 
 func (p *Processor) sendRandom(chatID int, username string) (err error) {
