@@ -14,6 +14,7 @@ const (
 	RndCmd   = "/rnd"
 	HelpCmd  = "/help"
 	StartCmd = "/start"
+	StopCmd  = "/stop"
 )
 
 // map[chatID]Word
@@ -29,10 +30,12 @@ func (p *Processor) doCmd(text string, chatID int, username string) error {
 	}
 
 	if isWordToCheck(text, chatID) {
-		return p.checkTranslation(chatID, text)
+		return p.checkTranslation(chatID, text, username)
 	}
 
 	switch text {
+	case StopCmd:
+		return p.sendStop(chatID)
 	case RndCmd:
 		return p.sendRandom(chatID, username)
 	case HelpCmd:
@@ -82,18 +85,19 @@ func Trim(words string) (string, string) {
 	return word1, word2
 }
 
-func (p *Processor) checkTranslation(chatID int, word string) (err error) {
+func (p *Processor) checkTranslation(chatID int, word string, username string) (err error) {
+	defer p.sendRandom(chatID, username)
 	w, ok := usersWhoTranslate[chatID]
 	log.Printf(w, " ", ok)
 	if !ok || w == "" {
 		return p.tg.SendMessage(chatID, msgUnknownCommand)
 	}
 
+	usersWhoTranslate[chatID] = ""
 	if word == w {
-		usersWhoTranslate[chatID] = ""
 		return p.tg.SendMessage(chatID, msgCorrect)
 	} else {
-		return p.tg.SendMessage(chatID, msgWrong)
+		return p.tg.SendMessage(chatID, msgWrong+w)
 	}
 
 }
@@ -126,6 +130,11 @@ func (p *Processor) sendRandom(chatID int, username string) (err error) {
 
 func (p *Processor) sendHelp(chatID int) error {
 	return p.tg.SendMessage(chatID, msgHelp)
+}
+
+func (p *Processor) sendStop(chatID int) error {
+	usersWhoTranslate[chatID] = ""
+	return p.tg.SendMessage(chatID, msgStop)
 }
 
 func (p *Processor) sendHello(chatID int) error {
